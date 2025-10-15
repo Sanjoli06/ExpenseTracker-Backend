@@ -1,28 +1,27 @@
-// controllers/authController.js
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // ================== SIGNUP ==================
 export const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser)
-      return res.status(400).json({ field: "email", message: "Email already exists" });
+      return res.status(400).json({ success: false, message: "Email already exists" });
 
-    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // save new user
     const newUser = new User({ name, email, password: hashedPassword });
     await newUser.save();
 
-    res.json({ message: "Signup successful" });
+    res.json({ success: true, message: "Signup successful" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -31,24 +30,21 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // check if user exists
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(400).json({ field: "email", message: "User not found" });
+      return res.status(400).json({ success: false, message: "User not found" });
 
-    // compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
-      return res.status(400).json({ field: "password", message: "Invalid credentials" });
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
 
-    // generate JWT
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    res.json({ message: "Login successful", token });
+    res.json({ success: true, message: "Login successful", token });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -56,8 +52,109 @@ export const login = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    res.json(user);
+    res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Temporary in-memory OTP store
+const otpStore = new Map();
+
+// ================== Nodemailer Transport ==================
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// ================== FORGOT PASSWORD (Send OTP) ==================
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ success: false, message: "User not found" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "ExpenseVault Password Reset OTP",
+      html: `
+        <p>Hello ${user.name},</p>
+        <p>Your OTP for password reset is:</p>
+        <h2>${otp}</h2>
+        <p>This OTP will expire in 5 minutes.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ success: true, message: "OTP sent to your email" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ================== VERIFY OTP ==================
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const stored = otpStore.get(email);
+
+    if (!stored)
+      return res.status(400).json({ success: false, message: "OTP expired or not found" });
+
+    if (stored.expiresAt < Date.now()) {
+      otpStore.delete(email);
+      return res.status(400).json({ success: false, message: "OTP expired" });
+    }
+
+    if (stored.otp !== otp)
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+
+    const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "10m" });
+    otpStore.delete(email);
+
+    res.json({ success: true, message: "OTP verified", resetToken });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ================== RESET PASSWORD ==================
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(400).json({ success: false, message: "Invalid or expired reset token" });
+    }
+
+    const user = await User.findOne({ email: decoded.email });
+    if (!user)
+      return res.status(400).json({ success: false, message: "User not found" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    otpStore.delete(decoded.email); // cleanup safeguard
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
