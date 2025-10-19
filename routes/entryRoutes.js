@@ -6,11 +6,11 @@ import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.route("/")
-  .post(authMiddleware, createEntry)  // Create new income/expense
-  .get(authMiddleware, getEntries);   // Get entries for logged-in user
+  .post(authMiddleware, createEntry)  
+  .get(authMiddleware, getEntries);   
 
 router.route("/:id")
-  .delete(authMiddleware, deleteEntry)  // delete entry
-  .put(authMiddleware,updateEntry);     // edit entry
+  .delete(authMiddleware, deleteEntry) 
+  .put(authMiddleware,updateEntry);     
 
 export default router;

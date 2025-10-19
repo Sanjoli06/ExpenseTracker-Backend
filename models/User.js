@@ -1,8 +1,6 @@
-// models/User.js
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs"; // add bcrypt import
+import bcrypt from "bcryptjs"; 
 
-// Schema for users
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },

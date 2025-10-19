@@ -8,7 +8,6 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.get("/me", authMiddleware, getUser);
 
-// Forgot / Reset Password
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-otp", verifyOtp);
 router.post("/reset-password", resetPassword);

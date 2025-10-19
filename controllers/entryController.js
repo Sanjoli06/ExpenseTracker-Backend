@@ -1,8 +1,5 @@
 import Entry from "../models/Entry.js";
 
-// @desc    Create new entry (income or expense)
-// @route   POST /api/entries
-// @access  Private
 export const createEntry = async (req, res) => {
   try {
     const { type, title, amount, category, date, notes, paidVia } = req.body;
@@ -28,9 +25,7 @@ export const createEntry = async (req, res) => {
   }
 };
 
-// @desc    Get all entries for logged-in user
-// @route   GET /api/entries
-// @access  Private
+
 export const getEntries = async (req, res) => {
   try {
     const entries = await Entry.find({ userId: req.user.id }).sort({ date: -1 });
@@ -40,10 +35,6 @@ export const getEntries = async (req, res) => {
   }
 };
 
-
-// ✅ @desc    Delete entry by ID
-// @route   DELETE /api/entries/:id
-// @access  Private
 export const deleteEntry = async (req, res) => {
   try {
     const entry = await Entry.findOne({
@@ -63,10 +54,7 @@ export const deleteEntry = async (req, res) => {
   }
 };
 
-// @desc    Update an existing entry
-// @route   PUT /api/entries/:id
-// @access  Private
-// ✅ UPDATE ENTRY
+
 export const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;

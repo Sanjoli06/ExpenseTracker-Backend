@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// ================== SIGNUP ==================
+
 export const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -25,7 +25,7 @@ export const signup = async (req, res) => {
   }
 };
 
-// ================== LOGIN ==================
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -48,7 +48,7 @@ export const login = async (req, res) => {
   }
 };
 
-// ================== GET USER (Protected) ==================
+
 export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -58,10 +58,9 @@ export const getUser = async (req, res) => {
   }
 };
 
-// Temporary in-memory OTP store
+
 const otpStore = new Map();
 
-// ================== Nodemailer Transport ==================
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -70,7 +69,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ================== FORGOT PASSWORD (Send OTP) ==================
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -103,7 +101,6 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// ================== VERIFY OTP ==================
 export const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -130,7 +127,6 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
-// ================== RESET PASSWORD ==================
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -150,7 +146,7 @@ export const resetPassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    otpStore.delete(decoded.email); // cleanup safeguard
+    otpStore.delete(decoded.email); 
 
     res.json({ success: true, message: "Password reset successfully" });
   } catch (err) {
