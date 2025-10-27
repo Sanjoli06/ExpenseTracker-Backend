@@ -8,10 +8,14 @@ import entryRoutes from "./routes/entryRoutes.js";
 dotenv.config();
 const app = express();
 
-app.use(cors({
-  origin: "https://expensetracker-frontend-c3xt.onrender.com",
-  credentials: true,
-}));
+// app.use(cors({
+//   origin: "https://expensetracker-frontend-c3xt.onrender.com",
+//   credentials: true,
+// }));
+
+app.use(cors());
+
+
 
 app.use(express.json());
 
