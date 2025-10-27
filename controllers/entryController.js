@@ -58,13 +58,13 @@ export const deleteEntry = async (req, res) => {
 export const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, name, amount, date, category, paidVia, notes } = req.body;
+    const { type, title, amount, date, category, paidVia, notes } = req.body;
 
     const entry = await Entry.findOne({ _id: id, user: req.user._id });
     if (!entry) return res.status(404).json({ message: "Entry not found" });
 
     entry.type = type || entry.type;
-    entry.name = name || entry.name;
+    entry.title = title || entry.title;
     entry.amount = amount || entry.amount;
     entry.date = date || entry.date;
     entry.category = category || entry.category;
